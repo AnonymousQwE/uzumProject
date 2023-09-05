@@ -4,22 +4,16 @@ const { setUserDataForBrowser } = require("./setUserData");
 
 let link = "https://seller.uzum.uz/seller/finances/?filter=ORDERS";
 
-async function CheckAuth(page, authData) {
+async function CheckAuth(page, process) {
   try {
-    try {
-      page = await setUserDataForBrowser(page, authData);
-    } catch (e) {
-      console.log(e);
-      // page.close();
-      throw Error;
-    }
-
+    // console.log("Проверяем авторизацию...");
+    process.send({ type: "message", text: "Проверяем авторизацию..." });
     await page.goto(`${link}`);
     await page.waitForSelector("tr.table__body__row");
     return true;
   } catch (e) {
     console.log(e);
-    throw Error;
+    return false;
   }
 }
 
@@ -29,7 +23,6 @@ function timeslotToDate(type, timeslot) {
   if (type === "t") {
     const split = timeslot.split(",");
     const date = split[0].split(".");
-    const time = split[1].split("-")[0].substr(1, 5);
 
     let currentDate = new Date(
       Date.parse(`${date[2]}-${date[1]}-${date[0]}T00:00:00`)

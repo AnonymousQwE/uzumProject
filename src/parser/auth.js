@@ -7,7 +7,6 @@ let link = "https://seller.uzum.uz/seller/signin";
 // AuthFunction();
 
 async function AuthFunction(page, authData) {
-  console.log("AUTH STARTED");
   try {
     await page.goto(`${link}`);
 

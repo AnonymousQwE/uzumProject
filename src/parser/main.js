@@ -2,15 +2,17 @@ const puppeteer = require("puppeteer");
 const { spawn, spawnSync } = require("child_process");
 const axios = require("axios");
 const { cycle } = require("./cycle");
+const { CheckAuth } = require("./utils");
+const { setUserDataForBrowser } = require("./setUserData");
+const { AuthFunction } = require("./auth");
 
 // const authData = {
 //   phoneNumber: "+998908221221",
 //   password: "Alex@8168620",
 // };
 
-const args = process.argv;
-const phoneNumber = args[2];
-const auth = false;
+const phoneNumber = process.argv[2];
+let auth = false;
 
 async function start() {
   try {
@@ -21,7 +23,6 @@ async function start() {
         if (error.response) {
           console.log(error.response.status);
         } else {
-          // Something happened in setting up the request that triggered an Error
           console.log("Error", error.message);
         }
         console.log(
@@ -44,36 +45,57 @@ async function start() {
         // slowMo: 50,
         // devtools: true,
       });
-      // let page = await browser.newPage();
       let pages = await browser.pages();
 
-      const page = pages[0];
+      let page = pages[0];
+
+      page.setViewport({ width: 1366, height: 768 });
+      try {
+        process.send({
+          type: "message",
+          text: "Запускаем проверку авторизации",
+        });
+
+        page = await setUserDataForBrowser(page, authData);
+        auth = await CheckAuth(page, process);
+        process.send({
+          type: "message",
+          text: `Вы авторизованны под пользователем ${phoneNumber}`,
+        });
+      } catch (e) {
+        console.log(e);
+        process.send({
+          type: "message",
+          text: "Проблемы с авторизацией... Начинаем процесс авторизации...",
+        });
+
+        await AuthFunction(page, authData);
+      }
 
       page.on("close", () => {
-        console.log("page_closed");
+        process.send({ type: "exit", text: "Процесс закрылся" });
         process.exit(1);
       });
 
-      page.setViewport({ width: 1366, height: 768 });
-
-      process.stdin.on("data", async (data) => {
-        if (data == "cycle") {
-          try {
-            const newPage = await browser.newPage();
-            await cycle(newPage, authData);
-            console.log("Цикл запущен");
-          } catch (e) {
-            console.log(e);
+      if (auth) {
+        console.log("Основной парсер запущен успешно");
+        process.stdin.on("data", async (data) => {
+          if (data == "products") {
+            try {
+              const newPage = await browser.newPage();
+              await cycle(newPage, authData);
+              console.log("Цикл запущен");
+            } catch (e) {
+              console.log(e);
+            }
           }
-        }
-      });
-
-      console.log("Основной парсер запущен успешно");
-      // await browser.close();
+        });
+      } else {
+      }
     }
   } catch (e) {
     console.log("Ошибка при запуске парсера...");
-    console.log(e.message)
+    console.log(e.message);
     return e;
   }
 }

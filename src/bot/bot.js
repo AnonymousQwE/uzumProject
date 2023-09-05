@@ -1,6 +1,6 @@
 const { Telegraf, session } = require("telegraf");
 const { Mongo } = require("@telegraf/session/mongodb");
-const { startHandler, expectPhoneNumberHandler } = require("./handlers.js");
+const {  expectPhoneNumberHandler, startBotHandler } = require("./handlers.js");
 const commands = require("./commands.js");
 
 const start = async () => {
@@ -27,7 +27,7 @@ const start = async () => {
 
   // bot.use(session({ defaultSession: () => ({}) }));
 
-  bot.start(startHandler);
+  bot.start(startBotHandler);
 
   commands.forEach((cmd) => bot.hears(cmd.command, cmd.handler));
 

@@ -32,25 +32,29 @@ productsRouter.post("/", jsonParser, async (req, res) => {
 
     const currentProd = ProductModel.findOne({ sku });
 
-    if (currentProd.sku) return res.sendStatus(200);
-
-    const product = new ProductModel({
-      title,
-      link,
-      saledCount,
-      returnCount,
-      statusSKU,
-      statusCard,
-      status,
-      rating,
-      sku,
-      productId,
-    });
-    // сохраняем в бд
-    await product.save();
-    res.send(product);
+    if (currentProd.sku) {
+      return res.sendStatus(200);
+      console.log(currentProd);
+    } else {
+      const product = new ProductModel({
+        title,
+        link,
+        saledCount,
+        returnCount,
+        statusSKU,
+        statusCard,
+        status,
+        rating,
+        sku,
+        productId,
+      });
+      // сохраняем в бд
+      await product.save();
+      res.status(200).send(product);
+    }
   } catch (error) {
-    console.log(error);
+    // console.log(error);
+    console.log("Ошибка в парсере продуктов");
   }
 });
 
