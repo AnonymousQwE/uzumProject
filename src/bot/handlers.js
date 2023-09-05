@@ -122,12 +122,10 @@ async function expectPhoneNumberHandler(ctx) {
 }
 
 function parserLogHandler(ctx) {
-  // Здесь вы можете выполнить действие для кнопки 2
   ctx.reply("Вы выбрали Логи парсеров");
 }
 
 function settingsHandler(ctx) {
-  // Здесь вы можете выполнить действие для кнопки 2
   console.log(ctx.session);
   //   ctx.reply(ctx.session);
 }
