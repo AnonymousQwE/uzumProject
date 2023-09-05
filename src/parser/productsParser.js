@@ -26,7 +26,7 @@ async function productParser(page, authData) {
         return document.querySelectorAll(".top-bar-container .paginator .page")
           .length;
       } catch (e) {
-        console.log(e);
+        console.log(e.message);
       }
     });
 
@@ -126,7 +126,7 @@ async function productParser(page, authData) {
               });
             }
           } catch (e) {
-            console.log(e);
+            console.log(e.message);
           }
           return page;
         },

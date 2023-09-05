@@ -1,11 +1,6 @@
-// import { Telegraf, session } from "telegraf";
-// import { expectPhoneNumberHandler, startHandler } from "./handlers.js";
-// import { commands } from "./commands.js";
-// import { Mongo } from "@telegraf/session/mongodb";
-
 const { Telegraf, session } = require("telegraf");
 const { Mongo } = require("@telegraf/session/mongodb");
-const { startHandler } = require("./handlers.js");
+const { startHandler, expectPhoneNumberHandler } = require("./handlers.js");
 const commands = require("./commands.js");
 
 const start = async () => {
@@ -36,7 +31,7 @@ const start = async () => {
 
   commands.forEach((cmd) => bot.hears(cmd.command, cmd.handler));
 
-  // bot.on("text", expectPhoneNumberHandler);
+  bot.on("text", expectPhoneNumberHandler);
 
   // bot.hears(/.json/, (ctx) => {
   //   // Здесь вы можете выполнить действие для кнопки 2

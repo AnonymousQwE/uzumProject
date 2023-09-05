@@ -25,7 +25,7 @@ const cycle = async (page, authData) => {
           await setTimeout(() => console.log("TimeoutStarted"), 1000000);
           flag = false;
         } catch (e) {
-          console.log(e);
+          console.log(e.message);
           flag = false;
         }
       } else {
@@ -36,12 +36,12 @@ const cycle = async (page, authData) => {
         } catch (e) {
           try {
             auth = await AuthFunction(page, authData);
-          } catch (error) {
-            console.log(error);
+          } catch (e) {
+            console.log(e.message);
             browser.close();
             flag = false;
           }
-          console.log(e);
+          console.log(e.message);
         }
       }
     }
@@ -69,7 +69,8 @@ process.on("message", async (data) => {
     // Закрываем дочерний процесс
     process.exit();
   } catch (e) {
-    console.log(e);
+    console.log("Ошибка в парсинге");
+    console.log(e.message);
   }
 });
 

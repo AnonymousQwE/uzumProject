@@ -1,7 +1,3 @@
-// import { sendMainMenu } from "./menu.js";
-
-// import { spawn } from "child_process";
-// import path from "path";
 const sendMainMenu = require("./menu.js");
 const { spawn } = require("child_process");
 const path = require("path");
@@ -22,11 +18,11 @@ function startHandler(ctx) {
 
 async function startParserHandler(ctx) {
   try {
-    ctx.reply("Вы выбрали запуск парсера");
-    childProcess.main.stdin.write("cycle");
     if (childProcess.main) {
+      childProcess.main.stdin.write("cycle");
       ctx.reply("Парсинг запустился");
     } else {
+      ctx.reply("Не запущен основной процесс");
     }
   } catch (e) {
     ctx.reply("Не запущен основной процесс");
@@ -38,7 +34,7 @@ async function mainParserStartHandler(ctx) {
   try {
     childProcess.main = spawn(
       "node",
-      [path.normalize("main.js"), "+998908221221"],
+      [path.normalize("src/parser/main.js"), "+998908221221"],
       {
         // stdio: ["pipe", "pipe", "pipe", "ipc"],
       }
@@ -98,7 +94,6 @@ function settingsHandler(ctx) {
 }
 
 function parserStatusHandler(ctx) {
-  // Здесь вы можете выполнить действие для кнопки 2
   ctx.replyWithMarkdownV2(
     `*Авторизация:* _${
       ctx.session?.authStatus ? "Авторизован" : "Не авторизован"
@@ -113,4 +108,12 @@ function parserStatusHandler(ctx) {
   console.log(childProcess);
 }
 
-module.exports = { startHandler, mainParserStartHandler };
+module.exports = {
+  startHandler,
+  mainParserStartHandler,
+  startParserHandler,
+  expectPhoneNumberHandler,
+  parserLogHandler,
+  settingsHandler,
+  parserStatusHandler,
+};
