@@ -3,6 +3,10 @@ const { spawn, fork } = require("child_process");
 const path = require("path");
 
 const childProcess = {};
+const chatId = {};
+const setChatId = (id) => {
+  chatId.products = id;
+};
 
 function startBotHandler(ctx) {
   if (ctx.session?.phoneNumber) {
@@ -16,44 +20,8 @@ function startBotHandler(ctx) {
   }
 }
 
-// async function mainParserStartHandler(ctx) {
-//   try {
-//     childProcess.main = spawn(
-//       "node",
-//       [path.normalize("src/parser/main.js"), "+998908221221"],
-//       {
-//         // stdio: ["pipe", "pipe", "pipe", "ipc"],
-//       }
-//     );
-
-//     childProcess.main.stdout.on("data", async (data) => {
-//       console.log(`Child Process Output: ${data}`);
-
-//       ctx.reply(`${data}`);
-
-//       // ctx.telegram.editMessageText(
-//       //   mess?.chat.id,
-//       //   mess?.message_id,
-//       //   0,
-//       //   `Child Process Output: ${data}`
-//       // );
-//     });
-
-//     childProcess.main.stderr.on("data", (data) => {
-//       console.error(`Child Process Error: ${data}`);
-//       // ctx.reply(`Child Process Error: ${data}`);
-//       ctx.reply("Ошибка");
-//     });
-//     childProcess.main.on("close", (code) => {
-//       console.log(`Дочерний процесс завершился с кодом ${code}`);
-//     });
-//     ctx.session.browserStatus = "wait";
-//   } catch (e) {
-//     console.log(e);
-//   }
-// }
-
 async function mainParserStartHandler(ctx) {
+  let productMessage;
   try {
     childProcess.main = fork(
       path.normalize("src/parser/main.js"),
@@ -65,11 +33,31 @@ async function mainParserStartHandler(ctx) {
       console.log(message);
 
       if (message.type === "message") {
-        ctx.reply(`${message.text}`);
+        await ctx.reply(`${message.text}`);
+      }
+      if (message.type === "error") {
+        ctx.reply(`Ошибка: ${message.text}`);
       }
       if (message.type === "exit") {
         ctx.reply(`${message.text}`);
         ctx.session.browserStatus = "closed";
+      }
+      if (message.type === "productMessage") {
+        if (message.first) {
+          productMessage = await ctx.replyWithMarkdownV2(message.text);
+        } else {
+          console.log(productMessage);
+          productMessage?.chat &&
+            ctx.telegram.editMessageText(
+              productMessage.chat.id,
+              productMessage.message_id,
+              0,
+              `${message.text}`,
+              {
+                parse_mode: "markdown",
+              }
+            );
+        }
       }
 
       // ctx.telegram.editMessageText(
@@ -97,8 +85,8 @@ async function mainParserStartHandler(ctx) {
 async function startParserHandler(ctx) {
   if (childProcess?.main?.connected) {
     try {
-      childProcess.main.send("products");
-      // ctx.reply("Парсинг запустился");
+      childProcess.main.send({ type: "products", setChatId });
+      ctx.reply("Парсинг запустился");
     } catch (e) {
       ctx.reply(`Произошла ошибка при запуске парсинга ${e.code}`);
       console.log(e);
@@ -125,11 +113,11 @@ async function expectPhoneNumberHandler(ctx) {
 
 function parserLogHandler(ctx) {
   ctx.reply("Вы выбрали Логи парсеров");
+  console.log(chatId);
 }
 
 function settingsHandler(ctx) {
   console.log(ctx.session);
-  //   ctx.reply(ctx.session);
 }
 
 function parserStatusHandler(ctx) {

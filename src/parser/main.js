@@ -2,7 +2,7 @@ const puppeteer = require("puppeteer");
 const { spawn, spawnSync } = require("child_process");
 const axios = require("axios");
 const { cycle } = require("./cycle");
-const { CheckAuth } = require("./utils");
+const { checkAuth } = require("./utils");
 const { setUserDataForBrowser } = require("./setUserData");
 const { AuthFunction } = require("./auth");
 
@@ -11,10 +11,13 @@ const { AuthFunction } = require("./auth");
 //   password: "Alex@8168620",
 // };
 
+const messages = {};
+
 const phoneNumber = process.argv[2];
 let auth = true;
 
 async function start() {
+  const pages = {};
   try {
     const user = await axios
       .get(`http://localhost:3000/api/users/findByPhone/${phoneNumber}`)
@@ -25,9 +28,10 @@ async function start() {
         } else {
           console.log("Error", error.message);
         }
-        console.log(
-          `Ошибка получения пользователя с сервера по номеру ${phoneNumber} `
-        );
+        process.send({
+          type: "error",
+          text: `Ошибка получения пользователя с сервера по номеру ${phoneNumber} `,
+        });
       });
 
     if (user?._id) {
@@ -57,7 +61,7 @@ async function start() {
         });
 
         page = await setUserDataForBrowser(page, authData);
-        // auth = await CheckAuth(page, process);
+        auth = await checkAuth(page, process);
         process.send({
           type: "message",
           text: `Вы авторизованны под пользователем ${phoneNumber}`,
@@ -69,6 +73,7 @@ async function start() {
         });
 
         await AuthFunction(page, authData);
+        await checkAuth(page, process);
       }
 
       page.on("close", () => {
@@ -76,28 +81,29 @@ async function start() {
         process.exit(1);
       });
 
-      if (auth) {
-        process.on("message", async (message) => {
-          console.log(message);
-          process.send(message);
-          if (message == "products") {
+      process.on("message", async (message) => {
+        if (auth) {
+          if (message.type == "products") {
             process.send({
               type: "message",
               text: "Начинается процесс сбора данных",
             });
             try {
-              const newPage = browser.newPage();
-              const s = await cycle(newPage, authData);
+              if (pages.productsParse) {
+              } else {
+                page.productsParse = await browser.newPage();
+                process.send(message);
+              }
+              await cycle(page.productsParse, authData, process);
               process.send({ type: "message", text: "Прошел процесс сбора" });
-              process.send(s);
             } catch (e) {
               console.log(e);
               process.send(e);
             }
           }
-        });
-      } else {
-      }
+        } else {
+        }
+      });
     }
   } catch (e) {
     console.log("Ошибка при запуске парсера...");

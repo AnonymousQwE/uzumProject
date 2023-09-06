@@ -5,7 +5,7 @@ const { default: axios } = require("axios");
 
 // productParser();
 
-async function productParser(page, authData) {
+async function productParser(page, authData, process) {
   let link = "https://seller.uzum.uz/seller/";
   let link2 = "/products/all";
   let flag = true;
@@ -26,12 +26,26 @@ async function productParser(page, authData) {
         return document.querySelectorAll(".top-bar-container .paginator .page")
           .length;
       } catch (e) {
+        process.send({
+          type: "error",
+          text: "Не удалось получить общее кол-во страниц",
+        });
         console.log(e.message);
       }
     });
 
     while (flag) {
       console.log("currentPage=" + counterPage);
+      if (counterPage == 1) {
+        process.send({
+          type: "productMessage",
+          first: true,
+          shopId: allShops[shopCounter - 1].id,
+          text: `Начинаем собирать данные с магазина ${
+            allShops[shopCounter - 1].shopTitle
+          }`,
+        });
+      }
 
       if (shopCounter > 1 && counterPage == 1) {
         console.log(
@@ -141,6 +155,13 @@ async function productParser(page, authData) {
         "Current Page=" + counterPage,
         "Total Page=" + totalPageCount
       );
+      process.send({
+        type: "productMessage",
+        shopId: allShops[shopCounter - 1].id,
+        text: `*${
+          allShops[shopCounter - 1].shopTitle
+        }* Пройдено: ${counterPage} из ${totalPageCount}`,
+      });
 
       if (shopCounter == allShops.length && counterPage == totalPageCount) {
         flag = false;
@@ -165,6 +186,14 @@ async function productParser(page, authData) {
 
         allShopsRes[allShops[shopCounter - 1].id] = res;
         console.log("Products saved. Total:" + res.length + " products");
+        process.send({
+          type: "productMessage",
+          shopId: allShops[shopCounter - 1].id,
+          text: `Сохранено: ${res.length} товаров из магазина *${
+            allShops[shopCounter - 1].shopTitle
+          }*`,
+        });
+
         counterPage = 1;
         res = [];
 

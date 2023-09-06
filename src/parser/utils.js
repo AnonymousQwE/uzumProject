@@ -4,7 +4,7 @@ const { setUserDataForBrowser } = require("./setUserData");
 
 let link = "https://seller.uzum.uz/seller/finances/?filter=ORDERS";
 
-async function CheckAuth(page, process) {
+async function checkAuth(page, process) {
   try {
     // console.log("Проверяем авторизацию...");
     process.send({ type: "message", text: "Проверяем авторизацию..." });
@@ -81,4 +81,4 @@ function monthToNumb(month) {
   }
 }
 
-module.exports = { CheckAuth, timeslotToDate };
+module.exports = { checkAuth, timeslotToDate };

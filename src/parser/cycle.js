@@ -5,19 +5,21 @@ const { productParser } = require("./productsParser");
 const { salesParser } = require("./salesParser");
 const { CheckAuth } = require("./utils");
 
-const cycle = async (page, authData) => {
+const cycle = async (page, authData, process) => {
+  const allShops = JSON.parse(JSON.parse(authData.localStorage).state).shop
+    .shops;
   try {
     let link = "https://seller.uzum.uz/seller/finances/?filter=ORDERS";
     await page.goto(link);
     try {
       // const timeslotCheck = await timeslotChecker(page, authData);
-
-      const products = await productParser(page, authData);
+      process.send({ type: "message", text: "Идёт процесс сбора товаров" });
+      const products = await productParser(page, authData, process);
       // await newProductParser(page, authData);
       // const invoices = await invoicesParser(page, authData);
       // const sales = await salesParser(page, authData);
       // console.log(invoices);
-      page.close();
+      // page.close();
       return true;
     } catch (e) {
       console.log(e);
