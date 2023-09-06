@@ -1,6 +1,6 @@
 const { Telegraf, session } = require("telegraf");
 const { Mongo } = require("@telegraf/session/mongodb");
-const {  expectPhoneNumberHandler, startBotHandler } = require("./handlers.js");
+const { expectPhoneNumberHandler, startBotHandler } = require("./handlers.js");
 const commands = require("./commands.js");
 
 const start = async () => {
@@ -24,8 +24,6 @@ const start = async () => {
     invoices: { state: "stop", lastStart: null },
     sales: { state: "stop", lastStart: null },
   };
-
-  // bot.use(session({ defaultSession: () => ({}) }));
 
   bot.start(startBotHandler);
 
@@ -63,5 +61,6 @@ const start = async () => {
 
   // Запуск бота
   bot.launch();
+  console.log("Бот запустился!");
 };
 start();

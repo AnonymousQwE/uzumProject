@@ -18,13 +18,13 @@ function startBotHandler(ctx) {
 
 // async function mainParserStartHandler(ctx) {
 //   try {
-//     // childProcess.main = spawn(
-//     //   "node",
-//     //   [path.normalize("src/parser/main.js"), "+998908221221"],
-//     //   {
-//     //     stdio: ["pipe", "pipe", "pipe", "ipc"],
-//     //   }
-//     // );
+//     childProcess.main = spawn(
+//       "node",
+//       [path.normalize("src/parser/main.js"), "+998908221221"],
+//       {
+//         // stdio: ["pipe", "pipe", "pipe", "ipc"],
+//       }
+//     );
 
 //     childProcess.main.stdout.on("data", async (data) => {
 //       console.log(`Child Process Output: ${data}`);
@@ -42,7 +42,7 @@ function startBotHandler(ctx) {
 //     childProcess.main.stderr.on("data", (data) => {
 //       console.error(`Child Process Error: ${data}`);
 //       // ctx.reply(`Child Process Error: ${data}`);
-//       ctx.reply(`Ошибка при выполнении парсинга...`);
+//       ctx.reply("Ошибка");
 //     });
 //     childProcess.main.on("close", (code) => {
 //       console.log(`Дочерний процесс завершился с кодом ${code}`);
@@ -55,12 +55,14 @@ function startBotHandler(ctx) {
 
 async function mainParserStartHandler(ctx) {
   try {
-    childProcess.main = fork(path.normalize("src/parser/main.js"), [
-      "+998908221221",
-    ]);
+    childProcess.main = fork(
+      path.normalize("src/parser/main.js"),
+      ["+998908221221"],
+      { stdio: ["pipe", "pipe", "pipe", "ipc"] }
+    );
 
     childProcess.main.on("message", async (message) => {
-      console.log(`Child Process Output: ${message}`);
+      console.log(message);
 
       if (message.type === "message") {
         ctx.reply(`${message.text}`);
@@ -78,14 +80,14 @@ async function mainParserStartHandler(ctx) {
       // );
     });
 
-    // childProcess.main.stderr.on("data", (data) => {
-    //   console.error(`Child Process Error: ${data}`);
-    //   // ctx.reply(`Child Process Error: ${data}`);
-    //   ctx.reply(`Ошибка при выполнении парсинга...`);
-    // });
-    // childProcess.main.on("exit", (code) => {
-    //   console.log(`Дочерний процесс завершился с кодом ${code}`);
-    // });
+    childProcess.main.stderr.on("data", (data) => {
+      console.error(`Child Process Error: ${data}`);
+      // ctx.reply(`Child Process Error: ${data}`);
+      ctx.reply(`Ошибка при выполнении парсинга...`);
+    });
+    childProcess.main.on("exit", (code) => {
+      console.log(`Дочерний процесс завершился с кодом ${code}`);
+    });
     ctx.session.browserStatus = "wait";
   } catch (e) {
     console.log(e);
@@ -93,16 +95,16 @@ async function mainParserStartHandler(ctx) {
 }
 
 async function startParserHandler(ctx) {
-  try {
-    if (!childProcess.main) {
+  if (childProcess?.main?.connected) {
+    try {
       childProcess.main.send("products");
-      ctx.reply("Парсинг запустился");
-    } else {
-      ctx.reply("Не запущен основной процесс");
+      // ctx.reply("Парсинг запустился");
+    } catch (e) {
+      ctx.reply(`Произошла ошибка при запуске парсинга ${e.code}`);
+      console.log(e);
     }
-  } catch (e) {
+  } else {
     ctx.reply("Не запущен основной процесс");
-    console.log(e);
   }
 }
 
@@ -142,7 +144,6 @@ function parserStatusHandler(ctx) {
         : "Не запущен"
     }_ \n *Парсинг продуктов:* _${ctx.state.ProductStatus}_`
   );
-  console.log(childProcess);
 }
 
 module.exports = {

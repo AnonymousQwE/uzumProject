@@ -12,7 +12,7 @@ const { AuthFunction } = require("./auth");
 // };
 
 const phoneNumber = process.argv[2];
-let auth = false;
+let auth = true;
 
 async function start() {
   try {
@@ -57,13 +57,12 @@ async function start() {
         });
 
         page = await setUserDataForBrowser(page, authData);
-        auth = await CheckAuth(page, process);
+        // auth = await CheckAuth(page, process);
         process.send({
           type: "message",
           text: `Вы авторизованны под пользователем ${phoneNumber}`,
         });
       } catch (e) {
-        console.log(e);
         process.send({
           type: "message",
           text: "Проблемы с авторизацией... Начинаем процесс авторизации...",
@@ -78,15 +77,22 @@ async function start() {
       });
 
       if (auth) {
-        console.log("Основной парсер запущен успешно");
-        process.stdin.on("data", async (data) => {
-          if (data == "products") {
+        process.on("message", async (message) => {
+          console.log(message);
+          process.send(message);
+          if (message == "products") {
+            process.send({
+              type: "message",
+              text: "Начинается процесс сбора данных",
+            });
             try {
-              const newPage = await browser.newPage();
-              await cycle(newPage, authData);
-              console.log("Цикл запущен");
+              const newPage = browser.newPage();
+              const s = await cycle(newPage, authData);
+              process.send({ type: "message", text: "Прошел процесс сбора" });
+              process.send(s);
             } catch (e) {
               console.log(e);
+              process.send(e);
             }
           }
         });
@@ -95,6 +101,8 @@ async function start() {
     }
   } catch (e) {
     console.log("Ошибка при запуске парсера...");
+    process.send(e);
+    process.send("Ошибочка...");
     console.log(e.message);
     return e;
   }

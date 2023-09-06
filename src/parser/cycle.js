@@ -21,10 +21,13 @@ const cycle = async (page, authData) => {
       return true;
     } catch (e) {
       console.log(e);
+      return e;
     }
     return true;
   } catch (e) {
-    console.log("Ошибка при парсинге...");
+    console.log(e);
+    return e;
+    // console.log("Ошибка при парсинге...");
   }
 };
 
