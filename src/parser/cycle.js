@@ -13,11 +13,6 @@ const cycle = async (page, authData, process) => {
     await page.goto(link);
     try {
       // const timeslotCheck = await timeslotChecker(page, authData);
-      process.send({
-        type: "auth",
-        shopId: "all",
-        text: "Идёт процесс сбора товаров",
-      });
       const products = await productParser(page, authData, process);
       // await newProductParser(page, authData);
       // const invoices = await invoicesParser(page, authData);

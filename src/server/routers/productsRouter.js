@@ -34,7 +34,6 @@ productsRouter.post("/", jsonParser, async (req, res) => {
 
     if (currentProd.sku) {
       return res.sendStatus(200);
-      console.log(currentProd);
     } else {
       const product = new ProductModel({
         title,

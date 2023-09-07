@@ -52,13 +52,18 @@ async function start() {
       let pages = await browser.pages();
 
       let page = pages[0];
+      page.on("close", () => {
+        process.send({ type: "exit", text: "Процесс закрылся" });
+        process.exit(1);
+      });
       page.setDefaultTimeout(100000);
       page.setViewport({ width: 1920, height: 1080 });
       try {
         process.send({
           type: "auth",
           first: true,
-          text: "Запускаем проверку авторизации 💤",
+          text: "Проверяем авторизацию 💤",
+          status: "work"
         });
 
         page = await setUserDataForBrowser(page, authData);
@@ -78,10 +83,7 @@ async function start() {
         await checkAuth(page, process);
       }
 
-      page.on("close", () => {
-        process.send({ type: "exit", text: "Процесс закрылся" });
-        process.exit(1);
-      });
+
 
       process.on("message", async (message) => {
         if (auth) {
@@ -99,6 +101,7 @@ async function start() {
                   type: "productMessage",
                   text: "Парсинг товаров запущен",
                   shopId: "all",
+                  status: "work"
                 });
               } else {
                 parserPages.productsParse = await browser.newPage();
@@ -108,8 +111,9 @@ async function start() {
               if (cycle) {
                 process.send({
                   type: "productMessage",
-                  text: "*Процесс сбора товаров завершен\\!*",
+                  text: "*Процесс сбора товаров завершен успешно ✅*",
                   first: true,
+                  status: true
                 });
               }
             } catch (e) {
@@ -122,10 +126,6 @@ async function start() {
       });
     }
 
-    process.on("exit", async () => {
-      console.log("Процесс завершается. Закрываем браузер...");
-      await browser.close();
-    });
   } catch (e) {
     console.log("Ошибка при запуске парсера...");
     process.send(e);
