@@ -6,8 +6,6 @@ let link = "https://seller.uzum.uz/seller/finances/?filter=ORDERS";
 
 async function checkAuth(page, process) {
   try {
-    // console.log("Проверяем авторизацию...");
-    process.send({ type: "message", text: "Проверяем авторизацию..." });
     await page.goto(`${link}`);
     await page.waitForSelector("tr.table__body__row");
     return true;

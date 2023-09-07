@@ -1,6 +1,5 @@
 const fs = require("fs");
 const puppeteer = require("puppeteer");
-const { setUserDataForBrowser } = require("./setUserData");
 const { default: axios } = require("axios");
 
 // productParser();
@@ -200,7 +199,9 @@ async function productParser(page, authData, process) {
         shopCounter++;
       }
     }
-    return allShopsRes;
+    if (!flag) {
+      return true;
+    }
   } catch (e) {
     console.log(e);
     return false;

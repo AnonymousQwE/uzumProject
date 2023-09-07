@@ -13,19 +13,24 @@ const cycle = async (page, authData, process) => {
     await page.goto(link);
     try {
       // const timeslotCheck = await timeslotChecker(page, authData);
-      process.send({ type: "message", text: "Идёт процесс сбора товаров" });
+      process.send({
+        type: "auth",
+        shopId: "all",
+        text: "Идёт процесс сбора товаров",
+      });
       const products = await productParser(page, authData, process);
       // await newProductParser(page, authData);
       // const invoices = await invoicesParser(page, authData);
       // const sales = await salesParser(page, authData);
       // console.log(invoices);
       // page.close();
-      return true;
+      if (products) {
+        return true;
+      }
     } catch (e) {
       console.log(e);
       return e;
     }
-    return true;
   } catch (e) {
     console.log(e);
     return e;

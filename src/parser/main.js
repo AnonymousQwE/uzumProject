@@ -17,7 +17,7 @@ const phoneNumber = process.argv[2];
 let auth = true;
 
 async function start() {
-  const pages = {};
+  const parserPages = {};
   try {
     const user = await axios
       .get(`http://localhost:3000/api/users/findByPhone/${phoneNumber}`)
@@ -52,24 +52,26 @@ async function start() {
       let pages = await browser.pages();
 
       let page = pages[0];
-
-      page.setViewport({ width: 1366, height: 768 });
+      page.setDefaultTimeout(100000);
+      page.setViewport({ width: 1920, height: 1080 });
       try {
         process.send({
-          type: "message",
-          text: "Запускаем проверку авторизации",
+          type: "auth",
+          first: true,
+          text: "Запускаем проверку авторизации 💤",
         });
 
         page = await setUserDataForBrowser(page, authData);
         auth = await checkAuth(page, process);
         process.send({
-          type: "message",
-          text: `Вы авторизованны под пользователем ${phoneNumber}`,
+          type: "auth",
+          status: auth,
+          text: `*Статус авторизации:* ${checkAuth ? "✅" : "⛔️"}`,
         });
       } catch (e) {
         process.send({
-          type: "message",
-          text: "Проблемы с авторизацией... Начинаем процесс авторизации...",
+          type: "auth",
+          text: "Проблемы с авторизацией...\nНачинаем процесс авторизации...",
         });
 
         await AuthFunction(page, authData);
@@ -85,17 +87,31 @@ async function start() {
         if (auth) {
           if (message.type == "products") {
             process.send({
-              type: "message",
+              type: "productMessage",
               text: "Начинается процесс сбора данных",
+              shopId: "all",
+              first: true,
+              status: "work",
             });
             try {
-              if (pages.productsParse) {
+              if (parserPages.productsParse instanceof puppeteer.Page) {
+                process.send({
+                  type: "productMessage",
+                  text: "Парсинг товаров запущен",
+                  shopId: "all",
+                });
               } else {
-                page.productsParse = await browser.newPage();
-                process.send(message);
+                parserPages.productsParse = await browser.newPage();
               }
-              await cycle(page.productsParse, authData, process);
-              process.send({ type: "message", text: "Прошел процесс сбора" });
+              await cycle(parserPages.productsParse, authData, process);
+
+              if (cycle) {
+                process.send({
+                  type: "productMessage",
+                  text: "*Процесс сбора товаров завершен\\!*",
+                  first: true,
+                });
+              }
             } catch (e) {
               console.log(e);
               process.send(e);
@@ -105,6 +121,11 @@ async function start() {
         }
       });
     }
+
+    process.on("exit", async () => {
+      console.log("Процесс завершается. Закрываем браузер...");
+      await browser.close();
+    });
   } catch (e) {
     console.log("Ошибка при запуске парсера...");
     process.send(e);
