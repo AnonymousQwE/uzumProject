@@ -57,7 +57,7 @@ async function start() {
         process.exit(1);
       });
       page.setDefaultTimeout(100000);
-      page.setViewport({ width: 1920, height: 1080 });
+      page.setViewport({ width: 1366, height: 768 });
       try {
         process.send({
           type: "auth",

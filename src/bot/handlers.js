@@ -21,15 +21,19 @@ function startBotHandler(ctx) {
 }
 
 async function mainParserStartHandler(ctx) {
-  if (!childProcess.main) {
+  if (!mainStatus[ctx.session.phoneNumber]) {
+    mainStatus[ctx.session.phoneNumber] = {}
+  }
+  if (!childProcess[ctx.session.phoneNumber] && !childProcess[ctx.session.phoneNumber]?.main) {
     try {
-      childProcess.main = fork(
+      childProcess[ctx.session.phoneNumber] = {}
+      childProcess[ctx.session.phoneNumber].main = fork(
         path.normalize("src/parser/main.js"),
         [ctx.session.phoneNumber],
         { stdio: ["pipe", "pipe", "pipe", "ipc"] }
       );
 
-      childProcess.main.on("message", async (message) => {
+      childProcess[ctx.session.phoneNumber].main.on("message", async (message) => {
         console.log(message);
 
         if (message.type === "message") {
@@ -54,7 +58,7 @@ async function mainParserStartHandler(ctx) {
             );
           }
           if (message.status) {
-            mainStatus.auth = message.status;
+            mainStatus[ctx.session.phoneNumber].auth = message.status;
           }
         }
         if (message.type === "error") {
@@ -89,20 +93,20 @@ async function mainParserStartHandler(ctx) {
             }
           }
           if (message.status) {
-            mainStatus.products = message.status
+            mainStatus[ctx.session.phoneNumber].products = message.status
             console.log(`Статус парсинга продуктов установлен ${message.status}`)
           }
         }
 
       });
 
-      childProcess.main.stderr.on("data", (data) => {
+      childProcess[ctx.session.phoneNumber].main.stderr.on("data", (data) => {
         console.error(`Child Process Error: ${data}`);
       });
-      childProcess.main.on("exit", (code) => {
+      childProcess[ctx.session.phoneNumber].main.on("exit", (code) => {
         console.log(`Дочерний процесс завершился с кодом ${code}`);
-        mainStatus.auth = false;
-        mainStatus.products = false;
+        mainStatus[ctx.session.phoneNumber].auth = false;
+        mainStatus[ctx.session.phoneNumber].products = false;
       });
       ctx.session.browserStatus = "wait";
     } catch (e) {
@@ -114,19 +118,19 @@ async function mainParserStartHandler(ctx) {
 }
 
 async function startParserHandler(ctx) {
-  if (childProcess?.main?.connected) {
-    if (mainStatus.products != "work") {
+  if (childProcess[ctx.session.phoneNumber].main?.connected) {
+    if (mainStatus[ctx.session.phoneNumber].products != "work") {
       try {
-        childProcess.main.send({ type: "products" });
-        mainStatus.products = true;
+        childProcess[ctx.session.phoneNumber].main.send({ type: "products" });
+        mainStatus[ctx.session.phoneNumber].products = true;
       } catch (e) {
         ctx.reply(`Произошла ошибка при запуске парсинга ${e.code}`);
-        mainStatus.products = false;
+        mainStatus[ctx.session.phoneNumber].products = false;
         console.log(e);
       }
     } else {
       ctx.reply("Уже запущен парсер товаров...");
-      console.log(!mainStatus.products)
+      console.log(!mainStatus[ctx.session.phoneNumber].products)
     }
   } else {
     ctx.reply("Не запущен основной процесс");
@@ -158,16 +162,19 @@ function settingsHandler(ctx) {
 }
 
 function parserStatusHandler(ctx) {
+
   ctx.replyWithMarkdownV2(
-    `*Главный процесс:* _${childProcess.main?.exitCode !== null ? "⛔️" : childProcess.main ? "✅" : "⛔️"
-    }_  \n *Авторизация:* _${mainStatus.auth === "work" ? "💼" : mainStatus.auth ? "✅" : "⛔️"
-    }_ \n *Парсинг продуктов:* _${mainStatus?.products === "work"
+    `*Главный процесс:* _${childProcess[ctx.session.phoneNumber] && childProcess[ctx.session.phoneNumber]?.main?.exitCode !== null ? "⛔️" : childProcess[ctx.session.phoneNumber]?.main ? "✅" : "⛔️"
+    }_  \n *Авторизация:* _${mainStatus[ctx.session.phoneNumber]?.auth === "work" ? "💼" : mainStatus[ctx.session.phoneNumber]?.auth ? "✅" : "⛔️"
+    }_ \n *Парсинг продуктов:* _${mainStatus[ctx.session.phoneNumber]?.products === "work"
       ? "💼"
-      : mainStatus.products
+      : mainStatus[ctx.session.phoneNumber]?.products
         ? "✅"
         : "⛔️"
     }_`
   );
+  console.log(mainStatus)
+  console.log(childProcess[ctx.session.phoneNumber])
 }
 
 function closeBrowsers(ctx) {
