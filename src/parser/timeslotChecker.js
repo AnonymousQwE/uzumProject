@@ -3,7 +3,7 @@ const { timeslotToDate } = require("./utils");
 
 // salesParser();
 
-async function timeslotChecker(page, authData) {
+async function timeslotChecker(page) {
   let link = "https://seller.uzum.uz/seller/1814/invoices/send";
 
   try {
@@ -12,100 +12,113 @@ async function timeslotChecker(page, authData) {
     await page.waitForSelector("tr.table__body__row");
     await page.waitForSelector(".td-hidden");
     const word = "Создана";
-    try {
-      const timeslot = await page.evaluate(
-        () =>
-          document.querySelector(`[data-test-id="text__timeslot-reservation"]`)
-            .innerText
-      );
-
-      const currentDate = timeslotToDate("t", timeslot);
-
-      await page.locator(".table__body__row").click();
-      await page.waitForSelector(".modal-card");
-
-      await page.locator(".timeslot__button").click();
-
-      await page.waitForSelector(".side-modal");
-      const newTimeSlotDate = await page.evaluate(
-        () => document.querySelector(`.timeslots__date`).innerText
-      );
-
-      const currentNewTimeSlot = timeslotToDate("nt", newTimeSlotDate);
-
-      if (currentNewTimeSlot > currentDate) {
-        console.log("New Timeslot >");
-      } else if (currentDate > currentNewTimeSlot) {
-        console.log("new TimeSlot <");
-
-        await page.locator(`.timeslot`).click();
-
-        await page.waitForSelector(".timeslots__footer__text");
-
-        // await page.waitForFunction(
-        //   (selector) => {
-        //     console.log("WAIT");
-        //     return !document.querySelector(selector);
-        //   },
-        //   {},
-        //   `.disabled__overlay`
-        // );
-
-        await page.locator(`[data-test-id="button__save"]`).click();
-        console.log(`newTimeSlot: ${currentNewTimeSlot.toLocaleDateString()}`);
-      } else {
-        console.log("ERROR");
-        console.log(`newTimeslot ${currentNewTimeSlot}`);
-        console.log(`oldTimeslot ${currentDate}`);
-      }
-      // let invoice = await page.evaluate(
-      //   async () => {
-      //     const currentInvoice = {};
-      //     const currentProducts = [];
-      //     lastId = await document.querySelector(".header-content span")
-      //       .innerText;
-      //     currentInvoice.orderInfo = await document.querySelector(
-      //       ".header-content span"
-      //     ).innerText;
-      //     currentInvoice.timeslot = document.querySelector(
-      //       ".timeslot span.timeslot__text"
-      //     ).innerText;
-      //     currentInvoice.status = document.querySelector(
-      //       `span[data-test-id="modal__invoice__status"]`
-      //     ).innerText;
-      //     currentInvoice.allPrice =
-      //       document.querySelector(".currency-b2b em").innerText;
-      //     const allProducts = await document.querySelectorAll(".subItem");
-      //     await allProducts.forEach(async (product) => {
-      //       const currentData = await product.querySelectorAll(
-      //         "div.data-container"
-      //       );
-      //       console.log(currentData);
-      //       if (currentData.length === 4) {
-      //         await currentProducts.push({
-      //           sku: currentData[0]?.innerText,
-      //           sentCount: currentData[1]?.innerText,
-      //           acceptedCount: currentData[2]?.innerText,
-      //           costPrice: currentData[3]?.innerText,
-      //         });
-      //       } else if (currentData.length === 3) {
-      //         await currentProducts.push({
-      //           sku: currentData[0]?.innerText,
-      //           sentCount: currentData[1]?.innerText,
-      //           costPrice: currentData[2]?.innerText,
-      //         });
-      //       }
-      //     });
-      //     currentInvoice.products = currentProducts;
-      //     return currentInvoice;
-      //   },
-      //   {
-      //     waitUntil: ".modal-card",
-      //   }
-      // );
-    } catch (e) {
-      console.log(e);
+    const allInvoices = await page.evaluate(async () => {
+      const allRows = document.querySelectorAll('.table__body__row')
+      const newData = [...allRows].map((row, i) => {
+        return { status: row.children[1].innerText, count: i, id: row.children[2].innerText, timeslotDate: row.children[4].innerText }
+      })
+      return newData
     }
+    )
+    process.send({
+      type: "invoices",
+      data: allInvoices,
+    });
+    return page
+    // try {
+    //   const timeslot = await page.evaluate(
+    //     () =>
+    //       document.querySelector(`[data-test-id="text__timeslot-reservation"]`)
+    //         .innerText
+    //   );
+
+    //   const currentDate = timeslotToDate("t", timeslot);
+
+    //   await page.locator(".table__body__row").click();
+    //   await page.waitForSelector(".modal-card");
+
+    //   await page.locator(".timeslot__button").click();
+
+    //   await page.waitForSelector(".side-modal");
+    //   const newTimeSlotDate = await page.evaluate(
+    //     () => document.querySelector(`.timeslots__date`).innerText
+    //   );
+
+    //   const currentNewTimeSlot = timeslotToDate("nt", newTimeSlotDate);
+
+    //   if (currentNewTimeSlot > currentDate) {
+    //     console.log("New Timeslot >");
+    //   } else if (currentDate > currentNewTimeSlot) {
+    //     console.log("new TimeSlot <");
+
+    //     await page.locator(`.timeslot`).click();
+
+    //     await page.waitForSelector(".timeslots__footer__text");
+
+    //     // await page.waitForFunction(
+    //     //   (selector) => {
+    //     //     console.log("WAIT");
+    //     //     return !document.querySelector(selector);
+    //     //   },
+    //     //   {},
+    //     //   `.disabled__overlay`
+    //     // );
+
+    //     await page.locator(`[data-test-id="button__save"]`).click();
+    //     console.log(`newTimeSlot: ${currentNewTimeSlot.toLocaleDateString()}`);
+    //   } else {
+    //     console.log("ERROR");
+    //     console.log(`newTimeslot ${currentNewTimeSlot}`);
+    //     console.log(`oldTimeslot ${currentDate}`);
+    //   }
+    //   // let invoice = await page.evaluate(
+    //   //   async () => {
+    //   //     const currentInvoice = {};
+    //   //     const currentProducts = [];
+    //   //     lastId = await document.querySelector(".header-content span")
+    //   //       .innerText;
+    //   //     currentInvoice.orderInfo = await document.querySelector(
+    //   //       ".header-content span"
+    //   //     ).innerText;
+    //   //     currentInvoice.timeslot = document.querySelector(
+    //   //       ".timeslot span.timeslot__text"
+    //   //     ).innerText;
+    //   //     currentInvoice.status = document.querySelector(
+    //   //       `span[data-test-id="modal__invoice__status"]`
+    //   //     ).innerText;
+    //   //     currentInvoice.allPrice =
+    //   //       document.querySelector(".currency-b2b em").innerText;
+    //   //     const allProducts = await document.querySelectorAll(".subItem");
+    //   //     await allProducts.forEach(async (product) => {
+    //   //       const currentData = await product.querySelectorAll(
+    //   //         "div.data-container"
+    //   //       );
+    //   //       console.log(currentData);
+    //   //       if (currentData.length === 4) {
+    //   //         await currentProducts.push({
+    //   //           sku: currentData[0]?.innerText,
+    //   //           sentCount: currentData[1]?.innerText,
+    //   //           acceptedCount: currentData[2]?.innerText,
+    //   //           costPrice: currentData[3]?.innerText,
+    //   //         });
+    //   //       } else if (currentData.length === 3) {
+    //   //         await currentProducts.push({
+    //   //           sku: currentData[0]?.innerText,
+    //   //           sentCount: currentData[1]?.innerText,
+    //   //           costPrice: currentData[2]?.innerText,
+    //   //         });
+    //   //       }
+    //   //     });
+    //   //     currentInvoice.products = currentProducts;
+    //   //     return currentInvoice;
+    //   //   },
+    //   //   {
+    //   //     waitUntil: ".modal-card",
+    //   //   }
+    //   // );
+    // } catch (e) {
+    //   console.log(e);
+    // }
 
     //   try {
     //     await page.locator(".td-hidden").scroll({

@@ -1,7 +1,12 @@
-const { Telegraf, session } = require("telegraf");
+const { Telegraf, session, Scenes } = require("telegraf");
 const { Mongo } = require("@telegraf/session/mongodb");
-const { expectPhoneNumberHandler, startBotHandler } = require("./handlers.js");
 const commands = require("./commands.js");
+const { startBotHandler } = require("./handlers/mainBotHandlers.js");
+const { phoneScene } = require("./scenes/requestPhoneScene.js");
+const { passwordScene, passwordConfirmationScene } = require("./scenes/requestPasswordScene.js");
+const { mainMenuScene } = require("./scenes/mainMenuScene.js");
+const adminList = [761121054, 5677673619, 5006165272, 119103696]
+
 
 const start = async () => {
   const store = Mongo({
@@ -14,53 +19,48 @@ const start = async () => {
     handlerTimeout: Infinity,
   });
 
+
+
+  const isAdmin = (ctx) => {
+    return adminList.includes(ctx.from.id)
+  }
+
+  const stage = new Scenes.Stage([mainMenuScene, phoneScene, passwordScene, passwordConfirmationScene], { ttl: 10 });
   bot.use(session({ store, defaultSession: () => ({}) }));
+  bot.use(stage.middleware());
 
-  const status = {
-    auth: false,
 
-    main: { state: "stop", start: null },
-    products: { state: "stop", lastStart: null },
-    invoices: { state: "stop", lastStart: null },
-    sales: { state: "stop", lastStart: null },
-  };
+
+
+
+  // bot.use(Telegraf.log())
+
+  bot.use((ctx, next) => {
+    if (isAdmin(ctx)) {
+      return next()
+    } else {
+      return ctx.reply("Не хватает прав...", {
+        reply_markup: { remove_keyboard: true },
+      })
+    }
+  })
+
+
+  commands.forEach((cmd) => {
+    if (cmd.type === "action") {
+      return bot.action(cmd.command, cmd.handler)
+    } else if (cmd.type === "hears") {
+      return bot.hears(cmd.command, cmd.handler)
+    }
+  });
+
+
 
   bot.start(startBotHandler);
-
-  commands.forEach((cmd) => bot.hears(cmd.command, cmd.handler));
-
-  bot.on("text", expectPhoneNumberHandler);
-
-  // bot.hears(/.json/, (ctx) => {
-  //   // Здесь вы можете выполнить действие для кнопки 2
-  //   ctx.reply(`Вы выбрали ${ctx.match.input}`);
-  //   const prods = JSON.parse(
-  //     fs.readFileSync(`products/${ctx.match.input}`, "utf8")
-  //   ).data;
-
-  //   const keyb = prods.map((p) => [p.title]);
-
-  //   keyb.push([" "], ["Назад в список файлов"]);
-
-  //   ctx.reply("Все товары", {
-  //     reply_markup: {
-  //       inline_keyboard: keyb,
-  //     },
-  //   });
-  // });
-
-  // bot.hears("Назад в список файлов", async (ctx) => {
-  //   const files = await fs.readdirSync(path.normalize("products"));
-  //   ctx.reply("Выберите файл:", {
-  //     reply_markup: {
-  //       keyboard: files.map((f) => [f]),
-  //       resize_keyboard: true,
-  //     },
-  //   });
-  // });
-
-  // Запуск бота
-  bot.launch();
+  bot.launch()
   console.log("Бот запустился!");
+
+  process.once('SIGINT', () => bot.stop('SIGINT'))
+  process.once('SIGTERM', () => bot.stop('SIGTERM'))
 };
 start();

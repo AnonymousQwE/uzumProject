@@ -4,7 +4,7 @@ const { setUserDataForBrowser } = require("./setUserData");
 
 let link = "https://seller.uzum.uz/seller/finances/?filter=ORDERS";
 
-async function checkAuth(page, process) {
+async function checkAuth(page) {
   try {
     await page.goto(`${link}`);
     await page.waitForSelector("tr.table__body__row");

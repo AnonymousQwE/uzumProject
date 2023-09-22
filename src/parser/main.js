@@ -1,8 +1,7 @@
 const puppeteer = require("puppeteer");
-const { spawn, spawnSync } = require("child_process");
 const axios = require("axios");
 const { cycle } = require("./cycle");
-const { checkAuth } = require("./utils");
+const { checkAuth, timeslotToDate } = require("./utils");
 const { setUserDataForBrowser } = require("./setUserData");
 const { AuthFunction } = require("./auth");
 
@@ -28,10 +27,6 @@ async function start() {
         } else {
           console.log("Error", error.message);
         }
-        process.send({
-          type: "error",
-          text: `Ошибка получения пользователя с сервера по номеру ${phoneNumber} `,
-        });
       });
 
     if (user?._id) {
@@ -44,7 +39,7 @@ async function start() {
       };
 
       const browser = await puppeteer.launch({
-        headless: false,
+        headless: "new",
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
         // slowMo: 50,
         // devtools: true,
@@ -106,9 +101,10 @@ async function start() {
               } else {
                 parserPages.productsParse = await browser.newPage();
               }
-              await cycle(parserPages.productsParse, authData, process);
+              await cycle(parserPages.productsParse, authData, "products");
 
               if (cycle) {
+                console.log(cycle)
                 process.send({
                   type: "productMessage",
                   text: "*Процесс сбора товаров завершен успешно ✅*",
@@ -121,8 +117,59 @@ async function start() {
               process.send(e);
             }
           }
-        } else {
+
+          if (message.type == "timeslotUpdater") {
+            process.send({
+              type: "timeslotMessage",
+              text: "Начинается процесс сбора данных",
+              shopId: "all",
+              first: true,
+              status: "work",
+            });
+            try {
+              if (parserPages.timeslotUpdater instanceof puppeteer.Page) {
+                process.send({
+                  type: "timeslotMessage",
+                  text: "Ловля таймслота в процессе...",
+                  shopId: "all",
+                  status: "work"
+                });
+              } else {
+                parserPages.timeslotUpdater = await browser.newPage();
+              }
+              const timeslotUpdaterPage = await cycle(parserPages.timeslotUpdater, authData, "timeslotUpdater");
+              if (timeslotUpdaterPage) {
+              }
+            } catch (e) {
+              console.log(e);
+              process.send(e);
+            }
+          }
+          if (message.type == "goTimeslotCheck" && parserPages.timeslotUpdater instanceof puppeteer.Page) {
+            const timeslot = await parserPages.timeslotUpdater.evaluate((count) => {
+              const rows = document.querySelectorAll(".table__body__row")
+              const currentRow = rows[count]
+              const timeslot = currentRow.querySelector('[data-test-id="text__timeslot-reservation"]').innerText
+              currentRow.querySelectorAll("td")[1].click()
+              return timeslot
+            }, message.count)
+            process.send({
+              type: "log",
+              timeslot
+            })
+            // const currentTimeslot = await timeslotToDate("t", timeslot)
+            // process.send({
+            //   type: "log",
+            //   message: "okay",
+            //   currentTimeslot
+            // })
+          }
         }
+      });
+    } else {
+      process.send({
+        type: "user",
+        text: `Пользователь с номером *${phoneNumber}* не найден...`,
       });
     }
 
